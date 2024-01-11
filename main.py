@@ -12,9 +12,9 @@ train_dataset = tf.keras.utils.image_dataset_from_directory("./new_pixel_data",
                                                             image_size=IMG_SIZE)
 
 validation_dataset = tf.keras.utils.image_dataset_from_directory("./new_pixel_data",
-                                                            shuffle=True,
-                                                            batch_size=BATCH_SIZE,
-                                                            image_size=IMG_SIZE)
+                                                                 shuffle=True,
+                                                                 batch_size=BATCH_SIZE,
+                                                                 image_size=IMG_SIZE)
 
 AUTOTUNE = tf.data.AUTOTUNE
 train_dataset = train_dataset.prefetch(buffer_size=AUTOTUNE)
@@ -41,7 +41,7 @@ global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
 feature_batch_average = global_average_layer(feature_batch)
 print(feature_batch_average.shape)
 
-prediction_layer = tf.keras.layers.Dense(1)
+prediction_layer = tf.keras.layers.Dense(5)
 prediction_batch = prediction_layer(feature_batch_average)
 print(prediction_batch.shape)
 
@@ -58,18 +58,30 @@ model.summary()
 
 base_learning_rate = 0.0001
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=[tf.keras.metrics.BinaryAccuracy(threshold=0, name='accuracy')])
 
 initial_epochs = 10
 
 loss0, accuracy0 = model.evaluate(train_dataset)
 
-print("initial loss: {:.2f}".format(loss0))
-print("initial accuracy: {:.2f}".format(accuracy0))
+base_model.trainable = True
+
+fine_tune_at = 100
+
+# Freeze all the layers before the `fine_tune_at` layer
+for layer in base_model.layers[:fine_tune_at]:
+    layer.trainable = False
+
+model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate / 10),
+              metrics=[tf.keras.metrics.BinaryAccuracy(threshold=0, name='accuracy')])
+
+fine_tune_epochs = 10
+total_epochs = initial_epochs + fine_tune_epochs
 
 history = model.fit(train_dataset,
-                    epochs=initial_epochs,
+                    epochs=total_epochs,
                     validation_data=validation_dataset)
 
 acc = history.history['accuracy']

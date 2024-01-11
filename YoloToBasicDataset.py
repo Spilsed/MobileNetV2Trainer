@@ -35,7 +35,7 @@ for i in range(len(image_files)):
             os.mkdir(new_data_dir + line_class)
 
         if not cv2.imwrite(new_data_dir+line_class+"/"+image_files[i]+str(output_counter)+".png", cropped):
-            raise "EEAZZ"
+            raise "ERR"
         else:
             output_counter += 1
     print(i)
