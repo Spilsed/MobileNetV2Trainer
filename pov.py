@@ -1,11 +1,11 @@
 import tensorflow as tf
-from keras.layers import Dense, GlobalAveragePooling1D
 from keras.applications.mobilenet_v2 import MobileNetV2
-from keras.models import Model
 from keras.optimizers import Adam
 from keras.utils import image_dataset_from_directory
 
-BATCH_SIZE = 1
+print(tf.config.list_physical_devices())
+
+BATCH_SIZE = 256
 IMG_SIZE = (200, 200)
 
 train_dataset = image_dataset_from_directory("./new_pixel_data",
@@ -14,15 +14,17 @@ train_dataset = image_dataset_from_directory("./new_pixel_data",
                                              label_mode="categorical",
                                              image_size=IMG_SIZE)
 
-model = MobileNetV2(input_shape=(200, 200, 3), classes=5, weights=None)
-model.summary()
+AUTOTUNE = tf.data.AUTOTUNE
+train_dataset = train_dataset.cache().prefetch(buffer_size=AUTOTUNE)
 
-for layer in model.layers[:-23]:
-    layer.trainable = False
+model = MobileNetV2(input_shape=(200, 200, 3), classes=6, weights=None)
 
-model.summary()
+# for layer in model.layers[:-23]:
+#     layer.trainable = False
 
 model.compile(optimizer=Adam(learning_rate=1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
 
-model.fit(train_dataset, epochs=10)
+while input("Train again? (y/n)") != "n":
+    model.fit(train_dataset, epochs=5)
+
 model.save("./MobileNetV2")
